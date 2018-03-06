@@ -1,0 +1,171 @@
+﻿@*THIS FILE IS MANAGED IN A SOLUTION*@
+@using USL7.Controllers
+@using USL7.Models
+@using umbraco.NodeFactory 
+@using Archetype.Models
+@using Newtonsoft.Json; 
+@using System.Web.Configuration;
+@model ContactPerson
+
+@{ 
+    var home = Node.GetCurrent();
+    var successMessage = home.GetProperty("successMessage") == null ? "Success" : home.GetProperty("successMessage").ToString();
+
+}
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+@{
+    if (!Convert.ToBoolean(TempData["Successful"]))
+    {
+        using (Html.BeginUmbracoForm<ContactSurfaceController>("SendContactForm", "ContactSurface"))
+        {
+            
+
+	<div class="contact-form">
+				<h4>Enquiry Form</h4>
+				<p class="type-grey"><span>*</span><i>Please complete required fields</i></p>	
+
+				<div class="row">
+					<div class="col-sm-6">
+
+						<div class="form-group">
+                            <p>@Html.LabelFor(model => model.Title, (home.GetProperty("titleText") == null ? "Title" : home.GetProperty("titleText").ToString()))<span>*</span></p>
+<p class="type-grey">@(home.GetProperty("titleSubtext") == null ? "Please select title" : home.GetProperty("titleSubtext").ToString())</p>
+
+                            @*"{'wrapNative': false, 'wrapNativeOnMobile': false}" })*@
+
+                            @Html.DropDownListFor(model => model.Title, Model.TitleOptions, new { @class = "contact-dd", @data_jcf = "{\"wrapNative\": false, \"wrapNativeOnMobile\": false}" }) 
+
+                            <b><span>
+                                @Html.ValidationMessageFor(model => model.Title)
+                            </span>
+                            </b>
+
+
+ 
+						</div>
+
+                        <div class="form-group">
+                            <p>@Html.LabelFor(model => model.Name, (home.GetProperty("nameText") == null ? "Name" : home.GetProperty("nameText").ToString()))<span>*</span></p>
+
+                            @Html.TextBoxFor(model => model.Name, new { @class = "form-control" })
+                            <p>
+                                <span>
+                                    @Html.ValidationMessageFor(model => model.Name)
+                                </span>
+                            </p>
+                        </div>
+
+						<div class="form-group">
+                            <p>@Html.LabelFor(model => model.Email, (home.GetProperty("emailText") == null ? "Email Address" : home.GetProperty("emailText").ToString()))<span>*</span></p>							
+                            <p class="type-grey">@(home.GetProperty("emailSubtext") == null ? "This will be the email we will contact you with." : home.GetProperty("emailSubtext").ToString())</p>
+                            @Html.TextBoxFor(model => model.Email, new { @class = "form-control" })
+                            <p>
+                                <span>
+                                    @Html.ValidationMessageFor(model => model.Email)
+                                </span>
+                            </p>
+						</div>				
+
+
+						<div class="form-group">
+                            <p>@Html.LabelFor(model => model.Phone, (home.GetProperty("phoneText") == null ? "Telephone No" : home.GetProperty("phoneText").ToString()))<span>*</span></p>
+							<p class="type-grey">@(new HtmlString(home.GetProperty("phoneSubtext") == null ? ("Enter your contact number with <b>no spaces</b>") : home.GetProperty("phoneSubtext").ToString()))</p>
+                            @Html.TextBoxFor(model => model.Phone, new { @class = "form-control" }) 
+                            <p>
+                                <span>
+                                    @Html.ValidationMessageFor(model => model.Phone)
+                                </span>
+                            </p>
+						</div>
+
+					
+
+						<div class="checkbox">
+							<label>
+							  @Html.CheckBoxFor(model => model.USLinformation.IsChecked) <p class="type-grey">@(home.GetProperty("uslInfoText") == null ? "Please tick this box if you would NOT like to receive further information from USL." : home.GetProperty("uslInfoText").ToString())</p>
+							</label>
+						  </div>
+					</div>
+
+					<div class="col-sm-6">
+
+						<div class="form-group">
+                            <p>@Html.LabelFor(model => model.Position, (home.GetProperty("positionText") == null ? "Position" : home.GetProperty("positionText").ToString()))<span>*</span></p>	
+							
+                            @Html.TextBoxFor(model => model.Position, new { @class = "form-control" })
+                            <p>
+                                <span>
+                                    @Html.ValidationMessageFor(model => model.Position)
+                                </span>
+                            </p>
+						</div>
+									  	
+
+						<div class="form-group">
+                            <p>@Html.LabelFor(model => model.ProjectName, (home.GetProperty("projectNameText") == null ? "Project Name" : home.GetProperty("projectNameText").ToString()))<span>*</span></p>	
+                            
+							@Html.TextBoxFor(model => model.ProjectName, new { @class = "form-control" })
+                            <p>
+                                <span>
+                                    @Html.ValidationMessageFor(model => model.ProjectName)
+                                </span>
+                            </p>
+						</div>
+
+						 <div class="form-group">
+                       <p>@Html.LabelFor(model => model.USLDivision, (home.GetProperty("divisionText") == null ? "Which USL Divison" : home.GetProperty("divisionText").ToString()))<span>*</span></p>	
+                       
+							<p class="type-grey">@(home.GetProperty("divisionSubtext") == null ? "Please select a division of main interest." : home.GetProperty("divisionSubtext").ToString())</p>
+							@Html.DropDownListFor(model => model.USLDivision, Model.USLDivisionOptions, new { @id="test2", @class = "contact-dd", @data_jcf = "{\"wrapNative\": false, \"wrapNativeOnMobile\": false}" }) 
+                       <p>
+                           <span>
+                               @Html.ValidationMessageFor(model => model.USLDivision)
+                           </span>
+                       </p>
+						</div>
+
+					</div>	
+
+					<div class="col-sm-6">
+						<div class="form-group line-20">
+                            <p>@Html.LabelFor(model => model.Message, (home.GetProperty("messageText") == null ? "Message" : home.GetProperty("messageText").ToString()))<span>*</span></p>	
+							
+							<p class="type-grey">@Html.LabelFor(model => model.Message, (home.GetProperty("messageSubtext") == null ? "Please send a short description about your query." : home.GetProperty("messageSubtext").ToString()))</p>
+							@Html.TextAreaFor(model => model.Message, new { @class = "contact-dd", @rows = "4", @cols = "50" })
+                            <p>
+                                <span>
+                                    @Html.ValidationMessageFor(model => model.Message)
+                                </span>
+                            </p>
+						</div>
+
+                        @*<div class="g-recaptcha" data-sitekey="@WebConfigurationManager.AppSettings["sitekey"]"></div>
+                        <span style="color:red">@ViewBag.CaptchaErrorMessage </span>*@
+                        <br />
+						<button type="submit" class="btn btn-primary right text-uppercase">@(home.GetProperty("submitButtonText") == null ? "Submit" : home.GetProperty("submitButtonText").ToString())</button>
+					</div>
+
+					</div>
+				</div>
+	
+				    }
+    }
+    else
+    {
+        <div class="unit size1of1">
+            <p class="signText">@successMessage.ToString()</p>
+        </div>
+       
+        <br />
+    }
+
+    <script src="/scripts/jquery-1.11.3.min.js"></script>
+    <script src="/scripts/jquery.validate.min.js"></script>
+    <script src="/scripts/jquery.validate.unobtrusive.min.js"></script>
+
+
+
+}
+
