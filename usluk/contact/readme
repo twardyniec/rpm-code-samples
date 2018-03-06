@@ -1,1 +1,1 @@
-A simple contact page that retrieves user assigned values from Umbraco and sends out contact information to the specified email address. 
+A simple contact page that retrieves user assigned values from Umbraco and sends out contact information to the specified email address. Has a Google map that I integrated with Umbraco so users can enter lat/long data easily through the Umbraco user interface. 
