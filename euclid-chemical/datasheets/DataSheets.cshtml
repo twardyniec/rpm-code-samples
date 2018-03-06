@@ -1,0 +1,391 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoTemplatePage
+@using Archetype.Models;
+@using umbraco.MacroEngines;
+@{
+    Layout = "Master.cshtml";
+    
+    //get all products by doc type
+    var productsHolder = CurrentPage.Site().Children.Where("DocumentTypeAlias == \"products\"").First();
+    int homeId = CurrentPage.Site().Id;
+    var allProducts = Umbraco.TypedContent(homeId).Descendants().Where(x => x.DocumentTypeAlias == "product").OrderBy(n => n.Name);
+    Dictionary<string, string> uniqueProducts = new Dictionary<string, string>();
+    foreach (var item in allProducts)
+    {
+        if (!uniqueProducts.ContainsKey(item.Name))
+        {
+            uniqueProducts.Add(item.Name, item.Id.ToString());
+        }
+    }
+    
+    //generate dropdown items
+    List<SelectListItem> products = new List<SelectListItem>();
+    foreach (KeyValuePair<string, string> item in uniqueProducts)
+    {
+        products.Add(new SelectListItem() { Text = item.Key, Value = item.Value });
+    }
+    var prod = "";
+
+    var prodCatNode = CurrentPage;
+    
+    //assign all text on page to read the user-assigned fields from Umbraco CMS, default to designs if not set by user 
+    var englishUSShortText = CurrentPage.HasValue("englishUSShortText") ? CurrentPage.englishUSShortText : "EN-US";
+    var spanishUSShortText = CurrentPage.HasValue("spanishUSShortText") ? CurrentPage.spanishUSShortText : "SP";
+    var englishCAShortText = CurrentPage.HasValue("englishCAShortText") ? CurrentPage.englishCAShortText : "EN-CA";
+    var frenchCAShortText = CurrentPage.HasValue("frenchCAShortText") ? CurrentPage.frenchCAShortText : "FR";
+    var tdsAbbreviation = CurrentPage.HasValue("tdsAbbreviation") ? CurrentPage.tdsAbbreviation : "TDS";
+    var sdsAbbreviation = CurrentPage.HasValue("sdsAbbreviation") ? CurrentPage.sdsAbbreviation : "SDS";
+    
+    ViewBag.productSubCategoryText = CurrentPage.HasValue("productSubCategoryText") ? CurrentPage.productSubCategoryText : "Product Sub-Category";
+    ViewBag.productText = CurrentPage.HasValue("productText") ? CurrentPage.productText : "Product"; 
+    
+    //create lists to account for duplicate products
+    List<string> duplicatesTDS = new List<string>();
+    List<string> duplicatesSDS = new List<string>();
+}
+
+@section header
+{  
+}
+    <link rel="stylesheet" href="/css/chosen.css">  
+    
+	@if (CurrentPage.HasValue("bannerImage"))
+    {
+        <div class="breadcrumbs_top-image" style="background-image: url(@CurrentPage.bannerImage.Url);" ></div>
+    }
+	
+	<div class="container-fluid breadcrumbs_top">
+		<div class="container">
+			<h1 class="type-white type-xl">@CurrentPage.Name</h1>
+		</div> 
+	</div>
+	
+		<div class="container-fluid breadcrumbs_bottom">
+		<div class="container">
+            @Html.Partial("Breadcrumbs", (object)CurrentPage)
+		</div> 
+	</div>
+	
+	<div class="container">
+		<div class="row padding-40">
+			<div class="col-xs-12 nav_top">
+				<div class="border-grey">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="line-20">
+								<h2 class="banner_full-green">@(CurrentPage.HasValue("searchByText") ? CurrentPage.searchByText : "Search By")</h2>
+							</div>
+						</div>
+					</div>
+					
+					<div class="row padding" >
+						<div class="col-md-4" >
+							<div class="line-20">
+								<h4>@(CurrentPage.HasValue("searchPretext") ? CurrentPage.searchPretext : "Search by keyword or product name:")</h4>
+								<div class="relative"><!--chosen-select-->
+									 <select id="itemDDL" class="chosen-select form-control" data-placeholder="@(CurrentPage.HasValue("searchPlaceholder") ? CurrentPage.searchPlaceholder : "Search. . . ")">
+									     <option value="default" ></option>
+									     @foreach (SelectListItem child in products)
+									     {
+									        <option value="@child.Value">@child.Text</option>
+									     }
+									 </select>
+									<button id="button" type="submit" class="btn button-orange type-white">@(CurrentPage.HasValue("submitText") ? CurrentPage.submitText : "Go!")</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				
+					<div class="row padding">
+						<div class="col-sm-4">
+								<h3 class="type-orange line-20">@(CurrentPage.HasValue("orText") ? CurrentPage.orText : "OR")</h3>
+						</div>
+					</div>
+
+					<div id="ddContainer" class="row padding line-20">
+						<div class="col-md-4 line-20 clearfix">
+							<h4>@(CurrentPage.HasValue("productCategoryText") ? CurrentPage.productCategoryText : "Product Category")</h4>
+							<select  id='prodCat' name='prodCat' class="width-full" data-jcf='{"wrapNative": false, "wrapNativeOnMobile": false}'>
+							    <option value="default">@(CurrentPage.HasValue("productCategoryText") ? CurrentPage.productCategoryText : "Product Category")</option>
+							    @foreach (var prodCat in productsHolder.Children)
+                                {
+							        <option value='@prodCat.Id'>@prodCat.Name</option>
+                                }
+							</select>
+						</div>
+						
+        				@foreach (var subcategory in productsHolder.Children)
+        				{
+        				    //populate dropdowns dynamically
+        				    @Html.Partial("GenerateFirstLevelDropdown", (object)subcategory)
+        				    foreach (var level in subcategory.Descendants())
+        				    {
+        				        if (level.DocumentTypeAlias != "product")
+        				        {
+        				            @Html.Partial("GenerateDropdown", (object)level)
+        				        }           
+        				    }       
+        				} 
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div class="row line-40 entirerow" style="display:none">
+			<div class="col-sm-12 col-md-12 col-lg-4">
+				<div class="nav_side nav_side-checkbox line-30 border-grey">
+					<a href="#"><h2 class="banner_full-green">@(CurrentPage.HasValue("filterText") ? CurrentPage.filterText : "Filter")</h2></a>
+					<h4 class="padding">@(CurrentPage.HasValue("documentsDisplayedText") ? CurrentPage.documentsDisplayedText : "Documents Displayed")</h4>
+						<ul id="filters">
+							<!--<li>
+								<input type="checkbox" value="all" id="filter-all"/>
+								<label title="Unchecked state" for="chk1">All</label>
+							</li>-->
+							<li>
+								<input type="checkbox" value="categorya" id="filter-categorya"/>
+								<label title="Unchecked state" for="chk1">@(CurrentPage.HasValue("tDSText") ? CurrentPage.tDSText : "TDS")</label>
+							</li>
+							<li>
+								<input type="checkbox" value="categoryb" id="filter-categoryb"/>
+								<label title="Unchecked state" for="chk1">@(CurrentPage.HasValue("sDSText") ? CurrentPage.sDSText : "SDS")</label>
+							</li>
+						</ul>
+				</div>
+			</div>
+
+			<div class="col-sm-12 col-md-12 col-lg-8 tds-sds">
+				<div class="border-grey">
+				<h2 class="banner_full-green line-20">@(CurrentPage.HasValue("resultsText") ? CurrentPage.resultsText : "Results")</h2>
+					<div class="padding-lr_15">
+					<p class="line-20"><span class="type-orange">@(CurrentPage.HasValue("toViewDocumentsText") ? CurrentPage.toViewDocumentsText : "To View Documents:")</span> @(CurrentPage.HasValue("selectFromText") ? CurrentPage.selectFromText : "Select from the language listed per sheet")</p>
+					
+					<div class="line-30 categorya all" id="tds">
+						<h3 class="banner_full-green">@(CurrentPage.HasValue("technicalDataSheetsText") ? CurrentPage.technicalDataSheetsText : "Technical Data Sheets")</h3>
+						<table class="table    table_downloads">
+						  @foreach (var child in allProducts)
+                            {
+                                //get all unique sheets for this product
+                                List<string> sheets = new List<string>();
+                                foreach (var sheet in child.GetPropertyValue<ArchetypeModel>("tds"))
+                                {
+                                    if (sheet.HasValue("title") && sheet.HasValue("fileLink"))
+                                    {
+                                        if (!sheets.Contains(sheet.GetValue("title").Trim()))
+                                        {
+                                            sheets.Add(sheet.GetValue("title").Trim());
+                                        }
+                                    }
+                                }
+                                
+                                //set classes for filter
+                                var productClasses = "";
+                                var currentDoc = "";
+                                var currentNode = child;
+                                while (currentNode != null)
+                                {
+                                    productClasses = productClasses + " item" + currentNode.Id;
+                                    currentNode = currentNode.Parent;
+                                }
+                                
+                                foreach (string list_sheet in sheets)
+                                {
+                                    foreach (var sheet in child.GetPropertyValue<ArchetypeModel>("tds"))
+                                    {
+                                        if (sheet.HasValue("title"))
+                                        {
+                                            if ((list_sheet == sheet.GetValue("title").Trim()) && !duplicatesTDS.Contains(list_sheet))
+                                            {
+                                            duplicatesTDS.Add(list_sheet);
+                                            <tr class="@productClasses item" style="display:none">
+                								<td><img class="table_download-image" src="/images/lineicon_downArrow-green-2.png">@sheet.GetValue("title")</td>
+                								<td>
+                									<ul class="literature_lang">
+                									    @foreach (var lang in child.GetPropertyValue<ArchetypeModel>("tds"))
+                                                        {
+                                                            if (lang.HasValue("title"))
+                                                            {
+                                                                if (lang.GetValue("title").Trim() == sheet.GetValue("title").Trim())
+                                                                {
+                                                                    if (lang.GetValue("regionUpdate") == "English - US") { <li><a href="@lang.GetValue("fileLink")" target="_blank">@englishUSShortText</a></li> }
+                                                                    if (lang.GetValue("regionUpdate") == "English - CA") { <li><a href="@lang.GetValue("fileLink")" target="_blank">@englishCAShortText</a></li> }
+                                                                    if (lang.GetValue("regionUpdate") == "Spanish - US") { <li><a href="@lang.GetValue("fileLink")" target="_blank">@spanishUSShortText</a></li> }
+                                                                    if (lang.GetValue("regionUpdate") == "French - CA") { <li><a href="@lang.GetValue("fileLink")" target="_blank">@frenchCAShortText</a></li> }
+                                                                }
+                                                            }
+                                                        }
+                									</ul>
+                								</td>
+            							    </tr>
+            							    break;
+            							    }
+        							    }
+    							    }
+                                }
+                             }
+						</table>
+					</div>
+					
+					<div class="line-30 categoryb all" id="sds">
+						<h3 class="banner_full-green">@(CurrentPage.HasValue("safetyDataSheetsText") ? CurrentPage.safetyDataSheetsText : "Safety Data Sheets")</h3>
+						<table class="table      table_downloads">
+							@foreach (var child in allProducts)
+                            {
+                                //get all unique sheets for this product
+                                List<string> sheets = new List<string>();
+                                foreach (var sheet in child.GetPropertyValue<ArchetypeModel>("sds"))
+                                {
+                                    if (sheet.HasValue("title") && sheet.HasValue("fileLink"))
+                                    {
+                                        if (!sheets.Contains(sheet.GetValue("title").Trim()))
+                                        {
+                                            sheets.Add(sheet.GetValue("title").Trim());
+                                        }
+                                    }
+                                }
+                                
+                                //set classes for filter
+                                var productClasses = "";
+                                var currentDoc = "";
+                                var currentNode = child;
+                                while (currentNode != null)
+                                {
+                                    productClasses = productClasses + " item" + currentNode.Id;
+                                    currentNode = currentNode.Parent;
+                                }
+                                
+                                foreach (string list_sheet in sheets)
+                                {
+                                    foreach (var sheet in child.GetPropertyValue<ArchetypeModel>("sds"))
+                                    {
+                                        if (sheet.HasValue("title"))
+                                        {
+                                            if ((list_sheet == sheet.GetValue("title").Trim()) && !duplicatesSDS.Contains(list_sheet))
+                                            {
+                                            duplicatesSDS.Add(list_sheet);
+                                            <tr class="@productClasses item" style="display:none">
+                								<td><img class="table_download-image" src="/images/lineicon_downArrow-green-2.png">@sheet.GetValue("title")</td>
+                								<td>
+                									<ul class="literature_lang">
+                									    @foreach (var lang in child.GetPropertyValue<ArchetypeModel>("sds"))
+                                                        {
+                                                            if (lang.HasValue("title"))
+                                                            {
+                                                                if (lang.GetValue("title").Trim() == sheet.GetValue("title").Trim())
+                                                                {
+                                                                    if (lang.GetValue("regionUpdate") == "English - US") { <li><a href="@lang.GetValue("fileLink")" target="_blank">@englishUSShortText</a></li> }
+                                                                    if (lang.GetValue("regionUpdate") == "English - CA") { <li><a href="@lang.GetValue("fileLink")" target="_blank">@englishCAShortText</a></li> }
+                                                                    if (lang.GetValue("regionUpdate") == "Spanish - US") { <li><a href="@lang.GetValue("fileLink")" target="_blank">@spanishUSShortText</a></li> }
+                                                                    if (lang.GetValue("regionUpdate") == "French - CA") { <li><a href="@lang.GetValue("fileLink")" target="_blank">@frenchCAShortText</a></li> }
+                                                                }
+                                                            }
+                                                        }
+                									</ul>
+                								</td>
+            							    </tr>
+            							    break;
+            							    }
+        							    }
+    							    }
+                                }
+                             }
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>	
+	</div>
+</div>
+<input type="hidden" value="" />
+<script>
+    $("#filters :checkbox").click(function () {
+        
+        $("#filters :checkbox:checked").each(function () { 
+            $("." + $(this).val()).show();
+        });
+        $("#filters :checkbox:not(:checked)").each(function () {
+            $("." + $(this).val()).hide();
+        });
+        if ($("#filters :checkbox:checked").length == 0){
+             
+             $("#tds").show();
+            $("#sds").show();
+             
+         }
+         
+    });
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.js" type="text/javascript"></script>
+<script src="/scripts/chosen.jquery.js" type="text/javascript"></script>
+<script src="/scripts/prism.js" type="text/javascript" charset="utf-8"></script>
+<script src="/scripts/init.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+    $("#prodCat").change(function(){
+        $(this).find("option:selected").each(function(){
+            var optionValue = $(this).attr("value");
+            if (optionValue == "default"){
+                $(".entirerow").hide();
+                $(".box").hide();
+                $(".item").hide();  
+            }
+            else{
+                $(".entirerow").show();
+                $(".box").not(".dropdown" + optionValue).hide();
+                $(".item").not(".item" + optionValue).hide();
+                $(".dropdown" + optionValue).show();
+                $(".item" + optionValue).show();   
+                //$('#itemDDL').prop('selectedIndex',0);
+                //$("select").each(function() { this.selectedIndex = 0 });
+                $(".chosen-select").val('').trigger("chosen:updated");
+                jcf.refreshAll();
+                /*$("tr:visible").each(function (index) {
+                   $(this).removeClass("table-striped-row");
+                  if ( index % 2 == 0) {
+                    $(this).addClass("table-striped-row");
+                  }
+                });*/
+            }
+            
+        });
+    });
+});
+</script>
+@foreach (var subcategory in productsHolder.Children)
+{
+    @Html.Partial("GenerateDropdownScripts", (object)subcategory)
+        				    
+    foreach (var level in subcategory.Descendants())
+    {
+        if (level.DocumentTypeAlias != "product")
+        {
+        	@Html.Partial("GenerateDropdownScripts", (object)level)
+        }           
+    }       
+} 
+<script>
+$("#button").click(function(){ 
+        var optionValue = $('select#itemDDL option:selected').val(); 
+        if (optionValue != "default")
+        {
+            $(".entirerow").show();
+            $(".box").hide();
+            $(".item").hide();
+            $(".item").not(".item" + optionValue).hide();
+            $(".item" + optionValue).show();
+        }
+    });
+</script>
+@section footer
+{  
+<!-- MOSAIC -->
+	<script src="/scripts/masonry.pkgd.min.js"></script>
+	<script src="/scripts/imagesloaded.js"></script>
+	<script src="/scripts/classie.js"></script>
+	<script src="/scripts/AnimOnScroll.js"></script>
+	<script>
+		new AnimOnScroll( document.getElementById( 'grid' ), {
+			minDuration : 0.4,
+			maxDuration : 0.7,
+			viewportFactor : 0.2
+		} );
+	</script>
+}
