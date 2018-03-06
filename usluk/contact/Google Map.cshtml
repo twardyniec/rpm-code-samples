@@ -1,0 +1,49 @@
+﻿@inherits Umbraco.Web.Macros.PartialViewMacroPage
+@using Archetype.Models; 
+@{
+	var counter = 0;
+	<style>
+      #map {
+        height: 400px;
+        width: 100%;
+       }
+    </style>
+ 
+    <div id="map"></div>
+    <script>
+      function initMap() {	  
+	 	 var locations = [		 
+		 @foreach (var location in CurrentPage.GetPropertyValue<ArchetypeModel>("coordinates")) {
+  		 @:['<strong>@location.GetValue("locationName")</strong><br>@location.GetValue("address")<br><a href="@location.GetValue("shareURL")">@(CurrentPage.HasValue("getDirectionsTextOverride") ? CurrentPage.getDirectionsTextOverride : "Get Directions")</a>', @location.GetValue("latitude"), @location.GetValue("longitude"), 0],
+ 		 }
+    ]; 
+
+	var map = new google.maps.Map(document.getElementById('map'), {
+		zoom: @(CurrentPage.HasValue("mapZoom") ? Convert.ToInt32(CurrentPage.mapZoom): 2),
+		center: new google.maps.LatLng(@CurrentPage.centerLatitude, @CurrentPage.centerLongitude),
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	});
+
+	var infowindow = new google.maps.InfoWindow({});
+
+	var marker, i;
+
+	for (i = 0; i < locations.length; i++) {
+		marker = new google.maps.Marker({
+			position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+			map: map
+		});
+
+		google.maps.event.addListener(marker, 'click', (function (marker, i) {
+			return function () {
+				infowindow.setContent(locations[i][0]);
+				infowindow.open(map, marker);
+			}
+		})(marker, i));
+	}
+}
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCm2pyGudIAntgFCYzlWJXh4DjH4DSwymg&callback=initMap">
+    </script>	
+}
