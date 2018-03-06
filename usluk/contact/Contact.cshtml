@@ -1,0 +1,68 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoTemplatePage
+@using Archetype.Models;
+@{
+	Layout = "USLMaster.cshtml";
+	Session["areaOfBusinessOptions"] = CurrentPage.GetPropertyValue<string[]>("areaOfBusiness");
+	var coordinates = CurrentPage.GetPropertyValue<ArchetypeModel>("coordinates");
+	int counter = 0;
+	foreach (var child in coordinates)
+	{
+		counter++;	
+	}
+	
+}
+@section header
+    { 
+		<!--FORM STYLES-->
+  	<link rel="stylesheet" href="/css/jcf.css">
+  	<script src="/scripts/jcf.js"></script>
+  	<script src="/scripts/jcf.select.js"></script>
+	<script src="/scripts/jcf.checkbox.js"></script>
+	<script>
+		$(function() {
+			jcf.replaceAll();
+		});
+	</script>
+    }
+
+<div class="background_white">
+		<div class="container">
+
+
+			<div class="row line-20">
+				<div class="col-sm-12">
+					<h1>@CurrentPage.Name</h1>
+					<p class="type-grey">@CurrentPage.headline</p>
+				</div>
+			</div>
+									
+			@if (counter > 0)
+			{
+				<div class="row line-40">
+				<div class="col-sm-12">
+					@Umbraco.RenderMacro("GoogleMap")
+				</div>
+			    </div>	
+			}
+			else 
+			{
+				<div class="row line-40">
+					<div class="col-sm-12">
+						<img class="img-responsive" src="@Umbraco.Media(CurrentPage.bannerImage).Url">
+					</div>
+				</div>
+			}
+
+			<div class="row contact">
+				@Html.Raw(CurrentPage.bodyText)
+			</div>
+
+						@{Html.RenderAction("LoadContactForm", "ContactSurface");}
+
+			</div>
+
+		</div>
+
+@section footer
+    { 
+    }
