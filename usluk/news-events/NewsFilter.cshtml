@@ -1,0 +1,202 @@
+﻿@*THIS FILE IS MANAGED IN A SOLUTION*@
+@using USL7.Models
+@using USL7.Controllers
+@using umbraco.NodeFactory;
+@using Umbraco.Web;
+@using umbraco;
+@model NewsSearch
+
+@{
+	Html.EnableClientValidation(true);
+	Html.EnableUnobtrusiveJavaScript(true);
+	Node ourBrands = Node.GetCurrent().GetAncestorByPathLevel(1);
+	Node uslNews = Node.GetCurrent().GetAncestorByPathLevel(1);
+	foreach (Node child in Node.GetCurrent().GetAncestorByPathLevel(1).Children)
+	{
+		if (child.NodeTypeAlias == "brandHolder")
+		{
+			ourBrands = child;
+		}
+	}
+	Node CurrentPage = Node.GetCurrent();
+	var umbracoHelper = new UmbracoHelper(UmbracoContext.Current);
+	var image = umbracoHelper.Media(Convert.ToInt32(CurrentPage.GetProperty("sideImage").Value)).url;
+	Node uslHome = Node.GetCurrent().GetAncestorByPathLevel(1);
+	Node current = Node.GetCurrent();
+	Node brandHome = null;
+	Node home = null;
+	string titleText = "";
+	while (current.Parent != null)
+	{
+		if (current.NodeTypeAlias == "brandHome")
+		{
+			brandHome = (Node)Node.GetCurrent();
+		}
+		current = (Node)current.Parent;
+	}
+	if (brandHome == null)
+	{
+		home = uslHome;
+		titleText = "General";
+	}
+	else
+	{
+		home = (Node)brandHome.Parent;
+		titleText = home.Name;
+	}
+}
+<script type="text/javascript" src="/scripts/jPages.min.js"></script>
+<!--FORM STYLES-->
+<link rel="stylesheet" href="/css/jcf.css">
+<script src="/scripts/jcf.js"></script>
+<script src="/scripts/jcf.select.js"></script>
+<script src="/scripts/jcf.checkbox.js"></script>
+<script>
+		$(function() {
+			jcf.replaceAll();
+		});
+</script>
+
+<div class="background_white">
+	<div class="container">
+		<div class="row">
+			<div class="col-sm-12 col-lg-9">
+				<div class="row">
+					<div class="col-sm-12">
+						<h1 class="type-dkBlue" id="brandTitle">@titleText News</h1>
+						<div class="filtertext">Filter</div>
+					</div>
+
+				</div>
+				<div class="news-filter line-40">
+					<div class="row">
+						<div class="col-sm-12">
+							<ul class="row news-filter-list">
+								<li class="col-sm-3" onclick="filterList(this.getAttribute('data-brands'))" data-brands="All"><div class="border">All</div></li>
+								<li class="col-sm-3" onclick="filterList(this.getAttribute('data-brands'))" data-brands="USL"><div class="border">USL</div></li>
+								@foreach (Node brand in ourBrands.Children)
+								{
+									if (brand.HasProperty("styleSheet"))
+									{
+										if (brand.GetProperty("styleSheet").ToString() != "appliedpolymerics")
+										{
+											<li class="col-sm-3" onclick="filterList(this.getAttribute('data-brands'))" data-brands="@brand.Name"><div class="border">@(brand.GetProperty("nameAbbreviation") != null ? brand.GetProperty("nameAbbreviation").ToString() : brand.Name)</div></li>
+										}
+									}
+								}
+							</ul>
+							<div class="news-filter_mobile hidden-lg">
+								<select id="dynamic_sel" class="contact-dd" data-jcf='{"wrapNative": false, "wrapNativeOnMobile": false}'>
+									<option value="All">All</option>
+									<option value="USL">USL</option>
+									@foreach (Node brand in ourBrands.Children)
+									{
+										<option value="@brand.Name">@(brand.GetProperty("nameAbbreviation") != null ? brand.GetProperty("nameAbbreviation").ToString() : brand.Name)</option>
+									}
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="news-articles" id="itemContainer">
+					@foreach (USL7.Models.NewsItem newsItem in Model.NewsItems)
+					{
+						var imageUrl = umbracoHelper.Media(newsItem.ImageId).url;
+						<div onclick="location.href='@newsItem.Url';" style="cursor:pointer;" class="topLevel" id="newsItemDiv" data-brands="@newsItem.Brand">
+							<div class="row line-30">
+								<div class="col-sm-5">
+									<a href="@newsItem.Url"><img class="img-responsive" src="@imageUrl"></a>
+								</div>
+								<div class="col-sm-7">
+									<a href="@newsItem.Url" class="newstitletext"><h2 class="font-weight-bold">@newsItem.Title</h2></a>
+									@if (newsItem.Description.Length >= 130)
+									{
+										<p class="font-weight-semi text-clamp_news-article">@newsItem.Description.Substring(0, 128)</p><a href="@newsItem.Url">...more ></a>
+									}
+									else
+									{
+										<p class="font-weight-semi text-clamp_news-article">@newsItem.Description</p>
+									}
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+			<div class="col-sm-3 padding_tb-20 hidden-md hidden-sm hidden-xs">
+				@{Html.RenderAction("LoadNewsSubscribe", "SubscribeSurface");}
+				@{Html.RenderAction("LoadNewsSocial", "NewsSurface");}
+				<a href="@CurrentPage.GetProperty("sideImageLink").Value.ToString()"><img class="img-responsive" src="@image"></a>
+			</div>
+		</div>
+		<br clear="all">
+		<nav aria-label="Page navigation" class="news">
+			<div class="pagination">
+				<div class="holder">
+				</div>
+			</div>
+		</nav>
+	</div>
+</div>
+<script type="text/javascript">
+    function filterList(v) {
+        destroy();
+        applyFilter(v);
+        setPager();
+    }
+
+    function applyFilter(v) {
+        var newsArticle = document.getElementsByClassName('topLevel');
+        //hide all news articles
+        if (v != "All") {
+            for (i = 0; i < newsArticle.length; i++) {
+                newsArticle[i].style.display = "none";
+            }
+            for (i = 0; i < newsArticle.length; i++) {
+                if (newsArticle[i].getAttribute('data-brands') == v) {
+                    newsArticle[i].style.display = "block";
+                }
+            }
+
+            document.getElementById("brandTitle").innerHTML = v + " News";
+        }
+        else {
+            for (i = 0; i < newsArticle.length; i++) {
+                newsArticle[i].style.display = "block";
+            }
+
+            document.getElementById("brandTitle").innerHTML = "General News";
+        }
+
+
+
+
+
+
+    }
+
+
+    function destroy() {
+        try {
+            $('#pgr').jPages("destroy");
+        }
+        catch (er) { }
+    }
+
+    function setPager() {
+        var tl = $('.topLevel:visible');
+        if (tl.length > 10) {
+            $('div.holder').jPages({
+                containerID: 'itemContainer',
+                minHeight: false
+            });
+        }
+    }
+
+    setPager();
+
+    $("#dynamic_sel").change(function () {
+        filterList(this.value);
+    });
+
+</script>
