@@ -1,0 +1,12 @@
+﻿@using Euclid7.Models
+@model DotApprovals
+
+<div class="col-md-6 dot_results" id="myModal">
+	<h2 class="banner_full-green">Products: @Model.StateName</h2>
+	<ul class="row padding-tb_15">
+		@foreach (string product in Model.Products)
+		{
+			<li class="col-md-12 col-lg-6"><a>@product</a></li>
+		}
+	</ul>
+</div>
