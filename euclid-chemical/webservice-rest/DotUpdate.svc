@@ -1,0 +1,1 @@
+﻿<%@ ServiceHost Language="C#" Debug="true" Service="Euclid7.Services.DotUpdate" CodeBehind="DotUpdate.svc.cs" %>
